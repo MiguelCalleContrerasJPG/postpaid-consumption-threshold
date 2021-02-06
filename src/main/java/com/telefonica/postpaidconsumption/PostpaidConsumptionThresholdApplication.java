@@ -11,10 +11,13 @@ import org.springframework.cloud.stream.annotation.StreamListener;
 
 import com.telefonica.postpaidconsumption.business.PostpaidConsumptionRules;
 import com.telefonica.postpaidconsumption.business.pojo.PostpaidConsumptionEspRequest;
+import com.telefonica.postpaidconsumption.business.pojo.UmbralConsumePostPay;
 import com.telefonica.postpaidconsumption.interfaces.PostpaidConsumptionProcessor;
 import com.telefonica.postpaidconsumption.redis.GeneralPlant;
+import com.telefonica.postpaidconsumption.redis.PostpaidThresholdBonus;
 import com.telefonica.postpaidconsumption.service.GeneralPlantService;
 import com.telefonica.postpaidconsumption.service.PostpaidThresholdBonusService;
+import com.telefonica.postpaidconsumption.service.UmbralConsumePostPayService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,10 +33,14 @@ public class PostpaidConsumptionThresholdApplication {
 	@Autowired
 	private PostpaidThresholdBonusService postpaidThresholdBonusS;
 
+	@Autowired
+	private UmbralConsumePostPayService umbralConsumePostPayService;
+
 	@StreamListener(PostpaidConsumptionProcessor.INPUT)
 	public void process(KStream<String, PostpaidConsumptionEspRequest> input) {
 
-		input.filter(log((key, value) -> PostpaidConsumptionRules.operationCodeFilter(value), "OPERATION_CODE_FILTER"))
+		input
+			.filter(log((key, value) -> PostpaidConsumptionRules.operationCodeFilter(value), "OPERATION_CODE_FILTER"))
 				.map((key, value) -> {
 
 					GeneralPlant obj = generalPlantS.infoSuscriber(value.getPhone());
@@ -46,13 +53,19 @@ public class PostpaidConsumptionThresholdApplication {
 						"CUSTOMER_SEGMENT_FILTER"))
 				.filter(log((key, value) -> PostpaidConsumptionRules.blackListFilter(value), "BLACK_LIST_FILTER"))
 				.filter(log((key, value) -> PostpaidConsumptionRules.indecopiListFilter(value), "INDECOPI_LIST_FILTER"))
+				
 				.map((key, value) -> {
-
-				//	PostpaidThresholdBonus obj = postpaidThresholdBonusS.bondInfo(value.getBondCode());
-				//	value.setPostpaidThresholdBonus(obj);
-
+					PostpaidThresholdBonus obj = postpaidThresholdBonusS.bondInfo(value.getBondCode());
+					value.setPostpaidThresholdBonus(obj);
 					return KeyValue.pair(key, value);
-				});
+				})
+				.map((key, value) -> {
+				    UmbralConsumePostPay obj = umbralConsumePostPayService.umbralInfo(value);
+				    value.setUmbralConsumePostPay(obj);
+				    return KeyValue.pair(key, value);
+				})
+				
+				;
 
 	}
 

@@ -6,8 +6,8 @@ import org.springframework.cloud.stream.annotation.Input;
 public interface PostpaidConsumptionProcessor {
 	
 
-	String INPUT = "postpaid-consumption-in";
-	String OUTPUT = "cola-out";
+	String INPUT = "queue-topic-notifyExt-out";
+	String OUTPUT = "queue-token-retention";
 
 	@Input(INPUT)
 	KStream<?, ?> input();

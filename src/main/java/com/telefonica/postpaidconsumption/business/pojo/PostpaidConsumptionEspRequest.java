@@ -33,5 +33,6 @@ public class PostpaidConsumptionEspRequest {
 
 	private GeneralPlant generalPlant;
 	private PostpaidThresholdBonus postpaidThresholdBonus;
+	private UmbralConsumePostPay umbralConsumePostPay;
 
 }
